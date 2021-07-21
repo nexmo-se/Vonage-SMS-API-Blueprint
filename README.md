@@ -27,6 +27,12 @@ the url you were provided
 1. Create the integration
    Admin > Message Platforms > Add Open Messages > configure Outbound URL
 
+2. Install PureCloud API client
+
+```js
+npm i purecloud-platform-client-v2
+```
+
 ### [localtunnel](https://www.npmjs.com/package/localtunnel)
 
 ```js
