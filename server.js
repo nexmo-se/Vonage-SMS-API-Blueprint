@@ -1,4 +1,11 @@
 // TO DO: enable authenticate() line 191
+// messageDeploymentId <<<<
+
+// 1. From Genesys to Webhook
+// - message chat app
+// 2. Send out to Phone (our stuff)
+// 3. From phone to App
+// 4. From App to Genesys
 
 require('dotenv').config({ path: __dirname + '/.env' });
 var express = require('express');
@@ -17,12 +24,12 @@ const platformClient = require('purecloud-platform-client-v2');
 const client = platformClient.ApiClient.instance;
 var accessToken = null;
 
-const messageDeploymentId = '';
+const messageDeploymentId = ''; // <<<<<<<<<<<<
 
 var app = express();
 var PORT = 3000;
 
-const LT_DOMAIN = 'kittphi-dm';
+const LT_DOMAIN = 'vonage-domain';
 const ExtSessionId = uuidv4();
 
 var transcript = [];
@@ -40,23 +47,23 @@ function authenticate() {
       accessToken = data.accessToken;
 
       // start express server
-      app.listen(PORT, () => {
-        console.log(`Server listening on port ${PORT}`);
+      // app.listen(PORT, () => {
+      //   console.log(`Server listening on port ${PORT}`);
 
-        // Start local tunnel for public internet access
-        (async () => {
-          const tunnel = await localtunnel({
-            port: PORT,
-            subdomain: LT_SUBDOMAIN,
-          });
+      //   // Start local tunnel for public internet access
+      //   (async () => {
+      //     const tunnel = await localtunnel({
+      //       port: PORT,
+      //       subdomain: LT_SUBDOMAIN,
+      //     });
 
-          console.log(`Server listening on external URL ${tunnel.url}`);
+      //     console.log(`Server listening on external URL ${tunnel.url}`);
 
-          tunnel.on('close', () => {
-            // tunnels are closed
-          });
-        })();
-      });
+      //     tunnel.on('close', () => {
+      //       // tunnels are closed
+      //     });
+      //   })();
+      // });
     })
     .catch((err) => {
       // handle failure response
@@ -66,6 +73,7 @@ function authenticate() {
 
 /***************************************************************
  * This route is used when Genesis sends a message to the end user
+ * https://quiet-hound-73.loca.lt/messageFromGenesys
  */
 app.post('/messageFromGenesys', (req, res) => {
   console.log('/messagesFromGenesys req.body', req.body);
@@ -188,7 +196,7 @@ app.get('/transcript', (req, res) => {
 });
 
 // ENABLE THIS <<<<<<<<<<<<<<<<
-// authenticate();
+authenticate();
 
 app.use(logger('dev'));
 app.use(express.json());
