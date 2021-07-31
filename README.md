@@ -3,8 +3,8 @@
 ## Running the app
 
 ```js
-// fun localtunnel to expose app to API
-lt --port 3000
+// use either localtunnel or ngrok to expose app to API
+lt --port 3000 || ngrok http 3000
 
 // At Vonage Dashboard, configure the Application Messages Webhooks URLs
 INBOUND URL
@@ -33,7 +33,7 @@ the url you were provided
 npm i purecloud-platform-client-v2
 ```
 
-### [localtunnel](https://www.npmjs.com/package/localtunnel)
+### If using [localtunnel](https://www.npmjs.com/package/localtunnel)
 
 ```js
 npm install -g localtunnel

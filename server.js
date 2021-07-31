@@ -1,83 +1,144 @@
-// TO DO: enable authenticate() line 191
-// messageDeploymentId <<<<
-
-// 1. From Genesys to Webhook
-// - message chat app
-// 2. Send out to Phone (our stuff)
-// 3. From phone to App
-// 4. From App to Genesys
-
-require('dotenv').config({ path: __dirname + '/.env' });
+require('dotenv').config();
 var express = require('express');
+var app = express();
+var port = 3000;
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
+// GENESYS
 var crypto = require('crypto');
 var https = require('https');
-var localtunnel = require('localtunnel');
-var { v4: uuidv4 } = require('uuid');
+const fetch = require('node-fetch');
 
-var { access } = require('fs');
-
-const platformClient = require('purecloud-platform-client-v2');
-const client = platformClient.ApiClient.instance;
+const clientId = process.env.GENESYS_CLIENT_ID;
+const clientSecret = process.env.GENESYS_CLIENT_SECRET;
+const environment = process.env.GENESYS_ENVIRONMENT;
 var accessToken = null;
-
-const messageDeploymentId = ''; // <<<<<<<<<<<<
-
-var app = express();
-var PORT = 3000;
-
-const LT_DOMAIN = 'vonage-domain';
-const ExtSessionId = uuidv4();
-
+if (!process.env.GENESYS_CLIENT_ID || !process.env.GENESYS_CLIENT_SECRET) {
+  console.log('Missing GENESYS_CLIENT_ID OR GENESYS_CLIENT_SECRET');
+}
+const messageDeploymentId = '8561c542-48cf-47ca-81ce-8898cb37971b';
 var transcript = [];
-/***************************************************************
- * Authenticate with Genesys Cloud using an OAuth Client Cred Grant flow
- */
-function authenticate() {
-  client
-    .loginClientCredentialsGrant(
-      process.env.GENESYS_CLIENT_ID,
-      process.env.GENESYS_CLIENT_SECRET
-    )
-    .then((data) => {
-      // authenticated
-      accessToken = data.accessToken;
 
-      // start express server
-      // app.listen(PORT, () => {
-      //   console.log(`Server listening on port ${PORT}`);
+// VONAGE
+const VONAGE_API_KEY = process.env.VONAGE_API_KEY;
+const VONAGE_API_SECRET = process.env.VONAGE_API_SECRET;
+const VONAGE_APPLICATION_ID = process.env.VONAGE_APPLICATION_ID;
+const VONAGE_APPLICATION_PRIVATE_KEY_PATH =
+  process.env.VONAGE_APPLICATION_PRIVATE_KEY_PATH;
+const VIRTUAL_NUMBER = process.env.VIRTUAL_NUMBER;
 
-      //   // Start local tunnel for public internet access
-      //   (async () => {
-      //     const tunnel = await localtunnel({
-      //       port: PORT,
-      //       subdomain: LT_SUBDOMAIN,
-      //     });
+if (!VONAGE_API_KEY || !VONAGE_API_SECRET) {
+  console.log('VONAGE_API_KEY or VONAGE_API_SECRET missing');
+  process.exit(1);
+}
+if (!VONAGE_APPLICATION_ID || !VONAGE_APPLICATION_PRIVATE_KEY_PATH) {
+  console.log(
+    'VONAGE_APPLICATION_ID or VONAGE_APPLICATION_PRIVATE_KEY_PATH missing'
+  );
+  process.exit(1);
+}
+if (!VIRTUAL_NUMBER) {
+  console.log('VIRTUAL_NUMBER missing');
+  process.exit(1);
+}
 
-      //     console.log(`Server listening on external URL ${tunnel.url}`);
+const Vonage = require('@vonage/server-sdk');
 
-      //     tunnel.on('close', () => {
-      //       // tunnels are closed
-      //     });
-      //   })();
-      // });
+const vonage = new Vonage({
+  apiKey: VONAGE_API_KEY,
+  apiSecret: VONAGE_API_SECRET,
+  applicationId: VONAGE_APPLICATION_ID,
+  privateKey: VONAGE_APPLICATION_PRIVATE_KEY_PATH,
+});
+
+// GENESYS
+// Test token by getting role definitions in the organization.
+function handleTokenCallback(body) {
+  return fetch(`https://api.${environment}/api/v2/authorization/roles`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `${body.token_type} ${body.access_token}`,
+    },
+  })
+    .then((res) => {
+      if (res.ok) {
+        console.log('Successfully received role definition with token.');
+        return res.json();
+      } else {
+        throw Error(res.statusText);
+      }
     })
-    .catch((err) => {
-      // handle failure response
-      console.log(err);
-    });
-} // end authenticate()
+    .then((jsonResponse) => {
+      // console.log(jsonResponse);
+    })
+    .catch((e) => console.error(e));
+}
 
-/***************************************************************
- * This route is used when Genesis sends a message to the end user
- * https://quiet-hound-73.loca.lt/messageFromGenesys
+// Genesys Cloud Authentication
+const params = new URLSearchParams();
+params.append('grant_type', 'client_credentials');
+
+fetch(`https://login.${environment}/oauth/token`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Authorization: `Basic ${Buffer.from(clientId + ':' + clientSecret).toString(
+      'base64'
+    )}`,
+  },
+  body: params,
+})
+  .then((res) => {
+    if (res.ok) {
+      console.log('Successfully granted access_token using client_credentials');
+      return res.json();
+    } else {
+      throw Error(res.statusText);
+    }
+  })
+  .then((jsonResponse) => {
+    // SAVE THE GRANT CLIENT CREDENTIAL
+    accessToken = jsonResponse.access_token;
+
+    handleTokenCallback(jsonResponse);
+  })
+  .catch((e) => console.error(e));
+
+// SEND SMS TO VONAGE
+const sendToVonage = async (data) => {
+  console.log('sendToVonage DATA: ', data);
+  await vonage.channel.send(
+    { type: 'sms', number: data.channel.to.id }, // TO_NUMBER
+    { type: 'sms', number: VIRTUAL_NUMBER }, // FROM_NUMBER
+    {
+      content: {
+        type: 'text',
+        text: data.text,
+      },
+    },
+    (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('Vonage Message UUID: ', data.message_uuid);
+      }
+    }
+  );
+};
+
+/*****************************************************************
+ * This route is used when Genesys sends a message to the end user
  */
 app.post('/messageFromGenesys', (req, res) => {
-  console.log('/messagesFromGenesys req.body', req.body);
-
+  // verify message signature
   const normalizedMessage = req.body;
   const signature = req.headers['x-hub-signature-256'];
   const secretToken = 'MySecretSignature';
@@ -87,31 +148,42 @@ app.post('/messageFromGenesys', (req, res) => {
     .digest('base64');
 
   if (`sha256=${messageHash}` === signature) {
-    console.log(JSON.stringify(req.headers));
-    console.log('\nGenesys req.body.text', req.body.text);
+    console.log(
+      '\n/messageFromGenesys req.headers\n',
+      JSON.stringify(req.headers)
+    );
+    console.log('\n/messageFromGenesys req.body\n', req.body); // Call your action on the request here
+    console.log('\n/messageFromGenesys req.body.text\n' + req.body.text);
+
+    // GENESYS AGENT SMS TO LVN
+    sendToVonage(req.body);
+
+    // WEB GUI
     transcript.push({
       sender: 'Genesys',
       message: req.body.text,
       purpose: 'agent',
     });
+    console.log('TRASNSCRIPT: ', transcript);
   } else {
     console.log('Webhook Validation Failed!');
   }
   res.status(200).end();
 });
 
-/***************************************************************
+/******************************************************************
  * This route is used for the end user to send a message to Genesys
  */
 app.post('/messageToGenesys', (req, res) => {
   try {
     sendMessageToGenesys(req.body);
-  } catch (error) {
-    console.log(error);
+  } catch (e) {
+    // TODO: do some error handling
   }
+  res.status(200).end(); // Responding is important
 });
 
-/***************************************************************
+/********************************************************************
  * Implement the code to send a message to Genesys Open Messaging API
  */
 function sendMessageToGenesys(data) {
@@ -120,35 +192,37 @@ function sendMessageToGenesys(data) {
     return;
   }
 
-  console.log('sendMessageToGenesys data', JSON.stringify(data));
+  console.log('\n/messageToGenesys DATA-start', data); // req.body
+  var d = new Date();
 
-  var date = new Date();
-
+  // build payload; will go to Genesys
   const body = JSON.stringify({
-    id: ExtSessionId,
+    id: data.message_uuid, // uuidv4();
     channel: {
       platform: 'Open',
       type: 'Private',
-      messageId: uuidv4(),
+      messageId: data.message_uuid, // FROM VONAGE // uuidv4(),
       to: {
-        id: messageDeploymentId,
+        id: messageDeploymentId, // 8561c542-48cf-47ca-81ce-8898cb37971b
       },
       from: {
-        nickname: data.nickname,
-        id: data.id,
-        idType: data.idType,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        nickname: data.from.number, // data.nickname
+        id: data.from.number, // data.id
+        idType: 'email', // data.idType
+        firstName: '', // data.firstName
+        lastName: '', // data.lastName
       },
-      time: date.toISOString(),
+      time: d.toISOString(),
     },
     type: 'Text',
-    text: data.message,
+    text: data.message.content.text, // data.message
     direction: 'Inbound',
   });
+  console.log('\n /messageToGenesys BODY \n', body);
 
   const options = {
-    hostname: 'api.mypurecloud.com',
+    // hostname: 'api.mypurecloud.com',	// postman will return "invalid credentials"
+    hostname: 'api.usw2.pure.cloud',
     port: 443,
     path: '/api/v2/conversations/messages/inbound/open',
     method: 'POST',
@@ -159,34 +233,37 @@ function sendMessageToGenesys(data) {
     },
   };
 
-  console.log('options:', JSON.stringify(options));
-  console.log('body:', body);
+  // console.log('options: ' + JSON.stringify(options));
+  // console.log('body: ' + body);
 
   const apireq = https.request(options, (res) => {
     console.log(`statusCode: ${res.statusCode}`);
 
-    res.on('data', (data) => {
-      console.log('datachunck');
+    res.on('data', (d) => {
+      // console.log('datachunk');
     });
 
     res.on('end', () => {
       console.log('on end');
       transcript.push({
-        sender: data.nickname,
-        message: data.message,
+        sender: data.from.number,
+        message: data.message.content.text,
         purpose: 'customer',
       });
+      console.log('TRANSCRIPT:', transcript);
+      console.log('DATA-end', data);
     });
   });
+
   apireq.on('error', (error) => {
-    console.log(error);
+    console.error(error);
   });
 
   apireq.write(body);
   apireq.end();
-} // end sendMessagetoGenesys()
+}
 
-/***************************************************************
+/******************************************************************
  * This route is used by the sample UI to display the OM transcript
  */
 app.get('/transcript', (req, res) => {
@@ -195,29 +272,12 @@ app.get('/transcript', (req, res) => {
   transcript = [];
 });
 
-// ENABLE THIS <<<<<<<<<<<<<<<<
-authenticate();
-
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (req, res) => {
-  res.send(200);
-});
-
-app.post('/webhooks/inbound', (req, res) => {
-  console.log(req.body);
-  res.status(200).end();
-});
-
+// VONAGE
 app.post('/webhooks/status', (req, res) => {
   // console.log(req.body);
   res.status(200).end();
 });
 
-// app.listen(3000, () => {
-//   console.log(`🌏 http://localhost:3000`);
-// });
+app.listen(port, () => {
+  console.log(`🌏 Server is listening...`);
+});
