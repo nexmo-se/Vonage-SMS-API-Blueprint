@@ -2,7 +2,6 @@ require('dotenv').config();
 var express = require('express');
 var app = express();
 var port = 3000;
-var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 app.use(logger('dev'));
