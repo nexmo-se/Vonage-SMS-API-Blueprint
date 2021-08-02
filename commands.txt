@@ -1,2 +1,0 @@
-npm i @vonage/server-sdk@beta cookie-parser debug dotenv express morgan nunjucks pure
-cloud-platform-client-v2 uuid

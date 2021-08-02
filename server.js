@@ -9,7 +9,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // GENESYS
 var crypto = require('crypto');
@@ -195,7 +194,7 @@ function sendMessageToGenesys(data) {
 
   // build payload; will go to Genesys
   const body = JSON.stringify({
-    id: data.message_uuid, // uuidv4();
+    id: data.message_uuid,
     channel: {
       platform: 'Open',
       type: 'Private',
