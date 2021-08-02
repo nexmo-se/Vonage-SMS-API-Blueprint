@@ -19,12 +19,17 @@ const fetch = require('node-fetch');
 const clientId = process.env.GENESYS_CLIENT_ID;
 const clientSecret = process.env.GENESYS_CLIENT_SECRET;
 const environment = process.env.GENESYS_ENVIRONMENT;
+const messageDeploymentId = process.env.GENESYS_MESSAGE_DEPLOYMENT_ID;
 var accessToken = null;
+
 if (!process.env.GENESYS_CLIENT_ID || !process.env.GENESYS_CLIENT_SECRET) {
   console.log('Missing GENESYS_CLIENT_ID OR GENESYS_CLIENT_SECRET');
+  process.exit(1);
 }
-const messageDeploymentId = '8561c542-48cf-47ca-81ce-8898cb37971b';
-var transcript = [];
+if (!process.env.GENESYS_MESSAGE_DEPLOYMENT_ID) {
+  console.log('Missing GENESYS_MESSAGE_DEPLOYMENT_ID');
+  process.exit(1);
+}
 
 // VONAGE
 const VONAGE_API_KEY = process.env.VONAGE_API_KEY;
@@ -70,7 +75,9 @@ function handleTokenCallback(body) {
   })
     .then((res) => {
       if (res.ok) {
-        console.log('Successfully received role definition with token.');
+        console.log(
+          '\n✅ Successfully received role definition by using Access Token.'
+        );
         return res.json();
       } else {
         throw Error(res.statusText);
@@ -98,7 +105,9 @@ fetch(`https://login.${environment}/oauth/token`, {
 })
   .then((res) => {
     if (res.ok) {
-      console.log('Successfully granted access_token using client_credentials');
+      console.log(
+        '\n✅ Successfully granted Access Token using Client Credentials'
+      );
       return res.json();
     } else {
       throw Error(res.statusText);
@@ -114,7 +123,7 @@ fetch(`https://login.${environment}/oauth/token`, {
 
 // SEND SMS TO VONAGE
 const sendToVonage = async (data) => {
-  console.log('sendToVonage DATA: ', data);
+  // console.log('sendToVonage DATA: ', data);
   await vonage.channel.send(
     { type: 'sms', number: data.channel.to.id }, // TO_NUMBER
     { type: 'sms', number: VIRTUAL_NUMBER }, // FROM_NUMBER
@@ -128,7 +137,9 @@ const sendToVonage = async (data) => {
       if (err) {
         console.error(err);
       } else {
-        console.log('Vonage Message UUID: ', data.message_uuid);
+        console.log(
+          `\n✅ Vonage successfully received the message, UUID: ${data.message_uuid}`
+        );
       }
     }
   );
@@ -138,6 +149,7 @@ const sendToVonage = async (data) => {
  * This route is used when Genesys sends a message to the end user
  */
 app.post('/messageFromGenesys', (req, res) => {
+  console.log(`\n🚀 Genesys is sending a message to Vonage`);
   // verify message signature
   const normalizedMessage = req.body;
   const signature = req.headers['x-hub-signature-256'];
@@ -148,25 +160,11 @@ app.post('/messageFromGenesys', (req, res) => {
     .digest('base64');
 
   if (`sha256=${messageHash}` === signature) {
-    console.log(
-      '\n/messageFromGenesys req.headers\n',
-      JSON.stringify(req.headers)
-    );
-    console.log('\n/messageFromGenesys req.body\n', req.body); // Call your action on the request here
-    console.log('\n/messageFromGenesys req.body.text\n' + req.body.text);
-
+    // console.log('\n/messageFromGenesys req.body\n', req.body); // Call your action on the request here
     // GENESYS AGENT SMS TO LVN
     sendToVonage(req.body);
-
-    // WEB GUI
-    transcript.push({
-      sender: 'Genesys',
-      message: req.body.text,
-      purpose: 'agent',
-    });
-    console.log('TRASNSCRIPT: ', transcript);
   } else {
-    console.log('Webhook Validation Failed!');
+    console.log('\nWebhook Validation Failed!');
   }
   res.status(200).end();
 });
@@ -176,9 +174,10 @@ app.post('/messageFromGenesys', (req, res) => {
  */
 app.post('/messageToGenesys', (req, res) => {
   try {
+    console.log(`\n🚀 Vonage is sending a message to Genesys`);
     sendMessageToGenesys(req.body);
-  } catch (e) {
-    // TODO: do some error handling
+  } catch (error) {
+    console.log(error);
   }
   res.status(200).end(); // Responding is important
 });
@@ -188,11 +187,10 @@ app.post('/messageToGenesys', (req, res) => {
  */
 function sendMessageToGenesys(data) {
   if (data.message === '') {
-    console.log('No message to send');
+    console.log('\nNo message to send');
     return;
   }
 
-  console.log('\n/messageToGenesys DATA-start', data); // req.body
   var d = new Date();
 
   // build payload; will go to Genesys
@@ -201,24 +199,23 @@ function sendMessageToGenesys(data) {
     channel: {
       platform: 'Open',
       type: 'Private',
-      messageId: data.message_uuid, // FROM VONAGE // uuidv4(),
+      messageId: data.message_uuid, // FROM VONAGE
       to: {
-        id: messageDeploymentId, // 8561c542-48cf-47ca-81ce-8898cb37971b
+        id: messageDeploymentId,
       },
       from: {
-        nickname: data.from.number, // data.nickname
-        id: data.from.number, // data.id
-        idType: 'email', // data.idType
-        firstName: '', // data.firstName
-        lastName: '', // data.lastName
+        nickname: data.from.number,
+        id: data.from.number,
+        idType: 'Phone',
+        firstName: '',
+        lastName: '',
       },
       time: d.toISOString(),
     },
     type: 'Text',
-    text: data.message.content.text, // data.message
+    text: data.message.content.text,
     direction: 'Inbound',
   });
-  console.log('\n /messageToGenesys BODY \n', body);
 
   const options = {
     // hostname: 'api.mypurecloud.com',	// postman will return "invalid credentials"
@@ -233,44 +230,23 @@ function sendMessageToGenesys(data) {
     },
   };
 
-  // console.log('options: ' + JSON.stringify(options));
-  // console.log('body: ' + body);
-
   const apireq = https.request(options, (res) => {
-    console.log(`statusCode: ${res.statusCode}`);
-
-    res.on('data', (d) => {
-      // console.log('datachunk');
-    });
-
-    res.on('end', () => {
-      console.log('on end');
-      transcript.push({
-        sender: data.from.number,
-        message: data.message.content.text,
-        purpose: 'customer',
-      });
-      console.log('TRANSCRIPT:', transcript);
-      console.log('DATA-end', data);
-    });
+    console.log(
+      `\n✅ Genesys successfully received the message, statusCode: ${res.statusCode}`
+    );
   });
 
   apireq.on('error', (error) => {
-    console.error(error);
+    console.error('\nFailed to send message to Genesys: ', error);
   });
 
-  apireq.write(body);
-  apireq.end();
+  try {
+    apireq.write(body);
+    apireq.end();
+  } catch (error) {
+    console.log(error);
+  }
 }
-
-/******************************************************************
- * This route is used by the sample UI to display the OM transcript
- */
-app.get('/transcript', (req, res) => {
-  res.write(JSON.stringify(transcript));
-  res.status(200).end();
-  transcript = [];
-});
 
 // VONAGE
 app.post('/webhooks/status', (req, res) => {
@@ -279,5 +255,5 @@ app.post('/webhooks/status', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🌏 Server is listening...`);
+  console.log(`🌏 Server is listening`);
 });
