@@ -53,7 +53,9 @@ summary: |
 
 ### Download the repository containing the project files
 
-1. Go to the [genesys open messaging repository](https://github.com/nexmo-se/genesys-open-messaging 'Opens the genesys open messaging GitHub repository') in GitHub and clone it to your machine.
+1. Go to the GitHub [https://github.com/nexmo-se/genesys-open-messaging](https://github.com/nexmo-se/genesys-open-messaging 'Opens the genesys open messaging GitHub repository') and clone the repository to your machine.
+
+   **Note** If you don't have access to it, you can contact the slack channel [#ask-cse](https://vonage.slack.com/archives/CNW647A0Y) for inquiry.
 
 ### Configure Express Server
 
@@ -115,6 +117,12 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 
 5.  Configure Routing. Navigate to Genesys Cloud > Admin > Routing > Message Routing. Add via `+` icon. You can name both the Inbound Message Flows and Inbound Address to `VonageMessage` as you did with the Architect Flow above. You can name the Description `Inbound Vonage OpenMessaging`. Set the Intial State to `Transfer to ACD`. You can save the name as `Transfer to ACD` and Queue to `Vonage`. Make sure to Add ACD Skill. Save the settings.
 
+6.  Get the Genesys Message Deployment ID. To retrieve this, we'll use [Postman](https://www.postman.com/) and one of the GET Request from the Genesys Postman Collection. Some instructions can be found in the article [Use Postman to test API calls](https://developer.genesys.cloud/api/rest/postman/). In short, we import the Genesys Postman Collection, set it's Authorization as instructed, along with Variables. Next, we navigate to PureCloud Platform API > api > v2 > conversations > messaging > integrations > open > `Get a list of Open messaging integrations` and execute the request. The Deployement ID will be in the Response within the array `entities[0].id`. Once we have that, we can set the `GENESYS_MESSAGE_DEPLOYMENT_ID` variable in the `.env` file.
+
+```js
+https://api.{{environment}}/api/v2/conversations/messaging/integrations/open
+```
+
 ### Start Express Server
 
 1. In another terminal, install the NPM dependencies for the repository:
@@ -140,3 +148,4 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 - [Grant Client Credentials](https://developer.dev-genesys.cloud/api/rest/authorization/use-client-credentials 'Grant Client Credentials')
 - [OAuth Client Credentials Login Flow](https://developer.dev-genesys.cloud/api/tutorials/oauth-client-credentials/#language=nodejs&step=0 'OAuth Client Credentials Login Flow')
 - [DevCast Tutorial 18 Introduction to the Genesys Cloud Open Messaging API](https://www.youtube.com/watch?v=dBEhmO1AaS0 'Introduction to the Genesys Cloud Open Messaging API')
+- [Making API Calls to PureCloud with Postman](https://www.youtube.com/watch?v=YtFGNkRlfcA&t=5s 'Making API Calls to PureCloud with Postman')
