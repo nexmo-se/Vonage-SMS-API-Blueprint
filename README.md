@@ -52,13 +52,15 @@ summary: |
 
 ### Vonage Setup
 
-1. The solution requires a Vonage Account and Vonage Virtual Number. To sign up for a Vonage Account, see [here](https://dashboard.nexmo.com/sign-up?icid=tryitfree_homepage_nexmodashbdfreetrialsignup_tile&utm_campaign=vonageseo)
+1. The solution requires a Vonage Account and Vonage Virtual Number. If you don't already have an account, you can sign up [here](https://dashboard.nexmo.com/sign-up?icid=tryitfree_homepage_nexmodashbdfreetrialsignup_tile&utm_campaign=vonageseo).
 
-2. Purchase a Number [here](https://dashboard.nexmo.com/your-numbers)
+2. Purchase a Vonage Virutal Number (LVN) [here](https://dashboard.nexmo.com/your-numbers).
 
-3. Configure Messages API [here](https://dashboard.nexmo.com/settings)
+3. Conifure Settings for Messages API [here](https://dashboard.nexmo.com/settings). At SMS Settings, enable Messages API then Save Settings.
 
-4. Configure Webhooks
+4. Create a Vonage Messages API Application [here](https://dashboard.nexmo.com/applications).
+
+5. Configure Webhooks
 
 ### Download the repository containing the project files
 
@@ -72,12 +74,30 @@ summary: |
 
 ### Configure Express Server
 
-1. Edit `.env`
+1. Rename `env-example` to `.env`
+
+   ```js
+   mv env-example .env
+   ```
 
 ### Run the App
 
-1. `ngrok http 3000`
-2. Install dependencies `npm install`
-3. Run the App `nodemon server.js`
+1. Get URL to allow APIs to tunnel to your cloned repository:
+
+   ```js
+   ngrok http 3000
+   ```
+
+2. In another terminal, Install the NPM dependencies for the repository:
+
+   ```js
+   npm install
+   ```
+
+3. Run the App:
+
+   ```js
+   nodemon server.js
+   ```
 
 ## Additional resources
