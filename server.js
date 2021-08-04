@@ -173,7 +173,7 @@ app.post('/messageFromGenesys', (req, res) => {
 app.post('/messageToGenesys', (req, res) => {
   try {
     console.log(`\n🚀 Vonage is sending a message to Genesys`);
-    sendMessageToGenesys(req.body);
+    sendToGenesys(req.body);
   } catch (error) {
     console.log(error);
   }
@@ -183,7 +183,7 @@ app.post('/messageToGenesys', (req, res) => {
 /********************************************************************
  * Implement the code to send a message to Genesys Open Messaging API
  */
-function sendMessageToGenesys(data) {
+function sendToGenesys(data) {
   if (data.message === '') {
     console.log('\nNo message to send');
     return;
