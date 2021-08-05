@@ -18,6 +18,7 @@ const clientId = process.env.GENESYS_CLIENT_ID;
 const clientSecret = process.env.GENESYS_CLIENT_SECRET;
 const environment = process.env.GENESYS_ENVIRONMENT;
 const messageDeploymentId = process.env.GENESYS_MESSAGE_DEPLOYMENT_ID;
+const secretToken = process.env.GENESYS_SECRET_TOKEN;
 var accessToken = null;
 
 if (!process.env.GENESYS_CLIENT_ID || !process.env.GENESYS_CLIENT_SECRET) {
@@ -26,6 +27,10 @@ if (!process.env.GENESYS_CLIENT_ID || !process.env.GENESYS_CLIENT_SECRET) {
 }
 if (!process.env.GENESYS_MESSAGE_DEPLOYMENT_ID) {
   console.log('Missing GENESYS_MESSAGE_DEPLOYMENT_ID');
+  process.exit(1);
+}
+if (!process.env.GENESYS_SECRET_TOKEN) {
+  console.log('Missing GENESYS_SECRET_TOKEN');
   process.exit(1);
 }
 
@@ -151,7 +156,6 @@ app.post('/messageFromGenesys', (req, res) => {
   // verify message signature
   const normalizedMessage = req.body;
   const signature = req.headers['x-hub-signature-256'];
-  const secretToken = 'MySecretSignature';
   const messageHash = crypto
     .createHmac('sha256', secretToken)
     .update(JSON.stringify(normalizedMessage))
@@ -177,7 +181,7 @@ app.post('/messageToGenesys', (req, res) => {
   } catch (error) {
     console.log(error);
   }
-  res.status(200).end(); // Responding is important
+  res.status(200).end();
 });
 
 /********************************************************************
@@ -216,8 +220,7 @@ function sendToGenesys(data) {
   });
 
   const options = {
-    // hostname: 'api.mypurecloud.com',	// postman will return "invalid credentials"
-    hostname: 'api.usw2.pure.cloud',
+    hostname: `api.${environment}`,
     port: 443,
     path: '/api/v2/conversations/messages/inbound/open',
     method: 'POST',
