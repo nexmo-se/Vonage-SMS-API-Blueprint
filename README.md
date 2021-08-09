@@ -1,6 +1,6 @@
 ---
 title: Configure Genesys Cloud for two way messaging using Open Messaging Platform and Vonage Messages API
-author: { Mark, Berkland, Kitt Phi }
+author: { Kitt Phi, Mark Berkland }
 indextype: blueprint
 icon: blueprint
 image: assets/img/open_messaging_vonage_messages_api_diagram.png
@@ -64,7 +64,7 @@ summary: |
    mv env-example .env
    ```
 
-2. Use [Ngrok](https://ngrok.com/) to get an External URL to allow Genesys and Vonage APIs to tunnel to your cloned repository. E.g. `https://{NGROK-URL}.ngrok.io`. We will use this URL later when setting our Webhooks:
+2. To make a reachable Webhook URL, we'll need to tunnel our local development server to the public internet so that it is reachable by the Genesys and Vonage APIs. For this example we'll use [Ngrok](https://ngrok.com/). After running the command below, we'll get an address back E.g. `https://{NGROK-URL}.ngrok.io`, which you'll use below in step 4 of the Vonage Setup.
 
    ```js
    ngrok http 3000
