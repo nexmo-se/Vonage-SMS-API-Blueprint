@@ -3,7 +3,7 @@ title: Configure Genesys Cloud for two way messaging using Open Messaging Platfo
 author: { Kitt Phi, Mark Berkland }
 indextype: blueprint
 icon: blueprint
-image: assets/img/open_messaging_vonage_messages_api_diagram.png
+image: flowchart.png
 category: 3
 summary: |
   This Genesys Cloud Developer Blueprint provides instructions to configure a middleware to allow a Genesys Cloud Agent to send and receive messages from a Vonage Virtual Number (LVN), using the Open Messaging Platform and Vonage Messages API.
@@ -64,7 +64,7 @@ summary: |
    mv env-example .env
    ```
 
-2. To make a reachable Webhook URL, we'll need to tunnel our local development server to the public internet so that it is reachable by the Genesys and Vonage APIs. For this example we'll use [Ngrok](https://ngrok.com/). After running the command below, we'll get an address back E.g. `https://{NGROK-URL}.ngrok.io`, which you'll use below in step 4 of the Vonage Setup.
+2. To make a reachable Webhook URL, we'll need to tunnel our local development server to the public internet so that it is reachable by the Genesys and Vonage APIs. For this example we'll use [Ngrok](https://ngrok.com/), but you can use any similar service or host on your own server as well. After running the command below, we'll get an address back E.g. `https://{NGROK-URL}.ngrok.io`, which you'll use below in step 4 of the Vonage Setup.
 
    ```js
    ngrok http 3000
@@ -102,7 +102,7 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 
 2.  Set the `GENESYS_ENVIRONMENT` varible inside the `.env` file to the Environment for which you logged into Genesys Pure Cloud. For us, it was `usw2.pure.cloud`. For some it is `api.mypurecloud.com`.
 
-3.  Add Open Messaging Platform. Navigate to Genesys Cloud > Admin > Message > Platforms. Add Platform. For the Name, you can name it `VonageMessaging`. Set the Outbound Notification Webhook URL to below, while replacing the `NGROK-URL` to the URL you received when running the Ngrok command earlier. You can set the Outbound Notification Webhook Signature Secret Token to `MySecretSignature`. Then save the settings.
+3.  Add Open Messaging Platform. Navigate to Genesys Cloud > Admin > Message > Platforms. Add Platform. For the Name, you can name it `VonageMessaging`. Set the Outbound Notification Webhook URL to below, while replacing the `NGROK-URL` to the URL you received when running the Ngrok command earlier. Set the Outbound Notification Webhook Signature Secret Token E.g. `MySecretSignature`. Then save the settings.
 
     ```js
     https://{NGROK-URL}.ngrok.io/messageFromGenesys
@@ -110,17 +110,13 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 
     **Note** If you don't see the Message feature, then you'll need to ask the Organization Administrator to enable this feature.
 
-    **Note** The Notification Webhook Signature Secret Token needs to be the same as line 154 of [server.js](./server.js)
+4.  At the `.env` file, set the `GENESYS_SECRET_TOKEN` to the Outbound Notification Webhook Signature Secret Token you set in the previous step E.g `MySecretSignature`.
 
-    ```js
-    const secretToken = 'MySecretSignature';
-    ```
+5.  Configure Architect Flow for Inbound Message. Navigate to Genesys Cloud > Admin > Architect. Select `Flows: Inbound Message` from the dropdown list. Click `+ Add`, then you can name it `VonageMessage`.
 
-4.  Configure Architect Flow for Inbound Message. Navigate to Genesys Cloud > Admin > Architect. Select `Flows: Inbound Message` from the dropdown list. Click `+ Add`, then you can name it `VonageMessage`.
+6.  Configure Routing. Navigate to Genesys Cloud > Admin > Routing > Message Routing. Add via `+` icon. You can name Inbound Message Flows `VonageMessage` as you did with the Architect Flow above and Inbound Address to `VonageMessaging`. You can name the Description `Inbound Vonage OpenMessaging`. Set the Intial State to `Transfer to ACD`. You can save the name as `Transfer to ACD` and Queue to `Vonage`. Make sure to Add ACD Skill. Save the settings.
 
-5.  Configure Routing. Navigate to Genesys Cloud > Admin > Routing > Message Routing. Add via `+` icon. You can name Inbound Message Flows `VonageMessage` as you did with the Architect Flow above and Inbound Address to `VonageMessaging`. You can name the Description `Inbound Vonage OpenMessaging`. Set the Intial State to `Transfer to ACD`. You can save the name as `Transfer to ACD` and Queue to `Vonage`. Make sure to Add ACD Skill. Save the settings.
-
-6.  Get the Genesys Message Deployment ID. To retrieve this, we'll use [Postman](https://www.postman.com/) and one of the GET Request from the Genesys Postman Collection. Some instructions can be found in the article [Use Postman to test API calls](https://developer.genesys.cloud/api/rest/postman/). In short, we import the Genesys Postman Collection, set it's Authorization as instructed, along with Variables. Next, inside Postman, we navigate to PureCloud Platform API > api > v2 > conversations > messaging > integrations > open > `Get a list of Open messaging integrations` and execute the request. The Deployement ID will be in the Response within the array `entities[0].id`. Once we have that, we can set the `GENESYS_MESSAGE_DEPLOYMENT_ID` variable in the `.env` file.
+7.  Get the Genesys Message Deployment ID. To retrieve this, we'll use [Postman](https://www.postman.com/) and one of the GET Request from the Genesys Postman Collection. Some instructions can be found in the article [Use Postman to test API calls](https://developer.genesys.cloud/api/rest/postman/). In short, we import the Genesys Postman Collection, set it's Authorization as instructed, along with Variables. Next, inside Postman, we navigate to PureCloud Platform API > api > v2 > conversations > messaging > integrations > open > `Get a list of Open messaging integrations` and execute the request. The Deployement ID will be in the Response within the array `entities[0].id`. Once we have that, we can set the `GENESYS_MESSAGE_DEPLOYMENT_ID` variable in the `.env` file.
 
     ```js
     https://api.{{environment}}/api/v2/conversations/messaging/integrations/open
@@ -137,7 +133,7 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 2. Start Express Server:
 
    ```js
-   nodemon server.js
+   node server.js
    ```
 
 ### Test the Solution
