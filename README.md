@@ -100,7 +100,7 @@ https://{NGROK-URL}.ngrok.io/webhooks/status
 
 1.  Add Intergration. Navigate to Genesys Cloud > Admin > Integrations > OAuth. Add Client. You can call the App Name `open-messaging`. Enable `Client Credentials`. Copy and Paste the Client ID to the `GENESYS_CLIENT_ID` variable and the Client Secret to the `GENESYS_CLIENT_SECRET` variable at the `.env` file. Once that's done, save the settings.
 
-2.  Set the `GENESYS_ENVIRONMENT` varible inside the `.env` file to the Environment for which you logged into Genesys Pure Cloud. For us, it was `usw2.pure.cloud`. For some it is `api.mypurecloud.com`.
+2.  Set the `GENESYS_ENVIRONMENT` varible inside the `.env` file to the Environment for which you logged into Genesys Pure Cloud. For us, it was `usw2.pure.cloud`. For some it is `mypurecloud.com`.
 
 3.  Add Open Messaging Platform. Navigate to Genesys Cloud > Admin > Message > Platforms. Add Platform. For the Name, you can name it `VonageMessaging`. Set the Outbound Notification Webhook URL to below, while replacing the `NGROK-URL` to the URL you received when running the Ngrok command earlier. Set the Outbound Notification Webhook Signature Secret Token E.g. `MySecretSignature`. Then save the settings.
 
