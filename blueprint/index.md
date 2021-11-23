@@ -1,6 +1,5 @@
 ---
 title: Configure Genesys Cloud for two way messaging using Open Messaging Platform and Vonage Messages API
-author: { Kitt Phi, Mark Berkeland }
 indextype: blueprint
 icon: blueprint
 image: flowchart.png
