@@ -64,6 +64,8 @@ const vonage = new Vonage({
   apiSecret: VONAGE_API_SECRET,
   applicationId: VONAGE_APPLICATION_ID,
   privateKey: VONAGE_APPLICATION_PRIVATE_KEY_PATH,
+}, {
+  appendToUserAgent: "Genesys-Blueprint-SMS/1.0"
 });
 
 // GENESYS
