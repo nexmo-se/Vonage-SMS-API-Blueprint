@@ -1,6 +1,5 @@
 ---
 title: Configure Genesys Cloud for two way messaging using Open Messaging Platform and Vonage Messages API
-author: { Kitt Phi, Mark Berkeland }
 indextype: blueprint
 icon: blueprint
 image: flowchart.png
@@ -52,7 +51,7 @@ summary: |
 
 ### Download the repository containing the project files
 
-1. Go to the GitHub [https://github.com/nexmo-se/genesys-open-messaging](https://github.com/nexmo-se/genesys-open-messaging 'Opens the genesys open messaging GitHub repository') and clone the repository to your machine.
+1. Go to the GitHub [https://github.com/GenesysCloudBlueprints/vonage-sms-api-blueprint/](https://github.com/GenesysCloudBlueprints/vonage-sms-api-blueprint/ 'Opens the genesys open messaging GitHub repository') and clone the repository to your machine.
 
    **Note** If you don't have access to it, you can contact the slack channel [#ask-cse](https://vonage.slack.com/archives/CNW647A0Y) for inquiry.
 
