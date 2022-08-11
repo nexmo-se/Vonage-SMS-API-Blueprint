@@ -1,4 +1,6 @@
 private.key
+*.key
+OTHER_APP.key
 # Logs
 logs
 *.log
