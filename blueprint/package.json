@@ -1,10 +1,10 @@
 {
   "name": "genesys-open-msg",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Express Server to handle back and forth communication between Genesys and Vonage, using Genesys Open Messaging and Vonage Messages API",
-  "main": "main.js",
+  "main": "server.js",
   "dependencies": {
-    "@vonage/server-sdk": "^2.10.7-beta-2",
+    "@vonage/server-sdk": "^2.11.2",
     "cookie-parser": "^1.4.5",
     "debug": "^4.3.2",
     "dotenv": "^10.0.0",
@@ -16,11 +16,18 @@
     "purecloud-platform-client-v2": "^116.0.0",
     "uuid": "^8.3.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "genesys",
+    "vonage",
+    "sms",
+    "messaging"
+  ],
+  "author": "Kitt Phi",
   "license": "ISC"
 }
