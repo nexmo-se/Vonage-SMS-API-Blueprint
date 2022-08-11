@@ -58,15 +58,19 @@ if (!VIRTUAL_NUMBER) {
 }
 
 const Vonage = require('@vonage/server-sdk');
+const SMS = require('@vonage/server-sdk/lib/Messages/SMS');
 
-const vonage = new Vonage({
-  apiKey: VONAGE_API_KEY,
-  apiSecret: VONAGE_API_SECRET,
-  applicationId: VONAGE_APPLICATION_ID,
-  privateKey: VONAGE_APPLICATION_PRIVATE_KEY_PATH,
-}, {
-  appendToUserAgent: "Genesys-Blueprint-SMS/1.0"
-});
+const vonage = new Vonage(
+  {
+    apiKey: VONAGE_API_KEY,
+    apiSecret: VONAGE_API_SECRET,
+    applicationId: VONAGE_APPLICATION_ID,
+    privateKey: VONAGE_APPLICATION_PRIVATE_KEY_PATH,
+  },
+  {
+    appendToUserAgent: 'Genesys-Blueprint-SMS/1.0',
+  }
+);
 
 // GENESYS
 // Test token by getting role definitions in the organization.
@@ -129,21 +133,14 @@ fetch(`https://login.${environment}/oauth/token`, {
 // SEND SMS TO VONAGE
 const sendToVonage = async (data) => {
   // console.log('sendToVonage DATA: ', data);
-  await vonage.channel.send(
-    { type: 'sms', number: data.channel.to.id }, // TO_NUMBER
-    { type: 'sms', number: VIRTUAL_NUMBER }, // FROM_NUMBER
-    {
-      content: {
-        type: 'text',
-        text: data.text,
-      },
-    },
+  await vonage.messages.send(
+    new SMS(data.text, data.to, data.from),
     (err, data) => {
       if (err) {
         console.error(err);
       } else {
         console.log(
-          `\n✅ Vonage successfully received the message, UUID: ${data.message_uuid}`
+          `\n✅ Vonage successfully received the message, MESSAGE_UUID: ${data.message_uuid}`
         );
       }
     }
@@ -190,12 +187,12 @@ app.post('/messageToGenesys', (req, res) => {
  * Implement the code to send a message to Genesys Open Messaging API
  */
 function sendToGenesys(data) {
-  if (data.message === '') {
+  if (data.text == '') {
     console.log('\nNo message to send');
     return;
   }
 
-  var d = new Date();
+  var date = new Date();
 
   // build payload; will go to Genesys
   const body = JSON.stringify({
@@ -208,16 +205,16 @@ function sendToGenesys(data) {
         id: messageDeploymentId,
       },
       from: {
-        nickname: data.from.number,
-        id: data.from.number,
+        nickname: data.from,
+        id: data.from,
         idType: 'Phone',
         firstName: '',
         lastName: '',
       },
-      time: d.toISOString(),
+      time: date.toISOString(),
     },
     type: 'Text',
-    text: data.message.content.text,
+    text: data.text,
     direction: 'Inbound',
   });
 
@@ -251,12 +248,12 @@ function sendToGenesys(data) {
   }
 }
 
-// VONAGE
+// VONAGE STATUS WEBHOOK - WILL SEE AFTER OUTBOUND SENT
 app.post('/webhooks/status', (req, res) => {
-  // console.log(req.body);
+  console.log(req.body);
   res.status(200).end();
 });
 
 app.listen(port, () => {
-  console.log(`🌏 Server is listening`);
+  console.log(`🌏 Server is listening on ${port}`);
 });
